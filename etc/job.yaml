@@ -1,0 +1,46 @@
+Name: job.rpc
+ListenOn: 0.0.0.0:9105
+
+DatabaseConf:
+  Type: mysql
+  Host: 127.0.0.1
+  Port: 3306
+  DBName: simple_admin
+  Username: # set your username
+  Password: # set your password
+  MaxOpenConn: 100
+  SSLMode: disable
+  CacheTime: 5
+
+RedisConf:
+  Host: 127.0.0.1:6379
+  Type: node
+
+Log:
+  ServiceName: jobRpcLogger
+  Mode: file
+  Path: /home/data/logs/job/rpc
+  Encoding: json
+  Level: info
+  Compress: false
+  KeepDays: 7
+  StackCoolDownMillis: 100
+
+Prometheus:
+  Host: 0.0.0.0
+  Port: 4005
+  Path: /metrics
+
+AsynqConf:
+# if you do not use WithRedisConf, you should uncomment the configuration below
+
+#  Addr: localhost:6379  # Redis address
+#  Pass: # Redis Password
+#  DB: 0 # Redis database index
+#  Concurrency: 20 # max concurrent process job task num
+#  SyncInterval: 10 # seconds, this field specifies how often sync should happen
+  Enable: true
+
+TaskConf:
+  EnableScheduledTask: false
+  EnableDPTask: true

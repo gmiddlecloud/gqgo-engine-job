@@ -1,0 +1,61 @@
+package task
+
+import (
+	"context"
+
+	"github.com/gmiddlecloud/gqgo-engine-job/ent/predicate"
+	"github.com/gmiddlecloud/gqgo-engine-job/ent/task"
+	"github.com/gmiddlecloud/gqgo-engine-job/internal/svc"
+	"github.com/gmiddlecloud/gqgo-engine-job/internal/utils/dberrorhandler"
+	"github.com/gmiddlecloud/gqgo-engine-job/types/job"
+
+	"github.com/zeromicro/go-zero/core/logx"
+)
+
+type GetTaskListLogic struct {
+	ctx    context.Context
+	svcCtx *svc.ServiceContext
+	logx.Logger
+}
+
+func NewGetTaskListLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetTaskListLogic {
+	return &GetTaskListLogic{
+		ctx:    ctx,
+		svcCtx: svcCtx,
+		Logger: logx.WithContext(ctx),
+	}
+}
+
+func (l *GetTaskListLogic) GetTaskList(in *job.TaskListReq) (*job.TaskListResp, error) {
+	var predicates []predicate.Task
+	if in.Name != "" {
+		predicates = append(predicates, task.NameContains(in.Name))
+	}
+	if in.TaskGroup != "" {
+		predicates = append(predicates, task.TaskGroupContains(in.TaskGroup))
+	}
+	result, err := l.svcCtx.DB.Task.Query().Where(predicates...).Page(l.ctx, in.Page, in.PageSize)
+
+	if err != nil {
+		return nil, dberrorhandler.DefaultEntError(l.Logger, err, in)
+	}
+
+	resp := &job.TaskListResp{}
+	resp.Total = result.PageDetails.Total
+
+	for _, v := range result.List {
+		resp.Data = append(resp.Data, &job.TaskInfo{
+			Id:             v.ID,
+			CreatedAt:      v.CreatedAt.UnixMilli(),
+			UpdatedAt:      v.UpdatedAt.UnixMilli(),
+			Status:         uint32(v.Status),
+			Name:           v.Name,
+			TaskGroup:      v.TaskGroup,
+			CronExpression: v.CronExpression,
+			Pattern:        v.Pattern,
+			Payload:        v.Payload,
+		})
+	}
+
+	return resp, nil
+}
